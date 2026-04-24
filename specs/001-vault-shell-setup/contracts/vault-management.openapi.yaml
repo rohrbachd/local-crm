@@ -1,0 +1,251 @@
+openapi: 3.0.3
+info:
+  title: Local-First CRM Vault Management Contract
+  version: 0.1.0
+  description: |
+    Phase 0 service boundary contract for vault lifecycle and dashboard startup behavior.
+    Transport may be internal desktop IPC; this contract defines request/response behavior.
+servers:
+  - url: app://local-first-crm
+paths:
+  /vaults/initialize:
+    post:
+      summary: Initialize a CRM vault in a selected folder
+      operationId: initializeVault
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitializeVaultRequest'
+      responses:
+        '201':
+          description: Vault initialized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaultStatusResponse'
+        '409':
+          description: Folder incompatible or confirmation required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompatibilityWarningResponse'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /vaults/open:
+    post:
+      summary: Open an existing compatible CRM vault
+      operationId: openVault
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenVaultRequest'
+      responses:
+        '200':
+          description: Vault opened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaultStatusResponse'
+        '409':
+          description: Selected folder is incompatible for open
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompatibilityWarningResponse'
+        '403':
+          description: Folder inaccessible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /vaults/active:
+    get:
+      summary: Resolve active vault at startup from app settings
+      operationId: resolveActiveVault
+      responses:
+        '200':
+          description: Active vault resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaultStatusResponse'
+        '404':
+          description: No usable active vault; caller should present selection flow
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /dashboard/snapshot:
+    get:
+      summary: Get dashboard summary for active vault
+      operationId: getDashboardSnapshot
+      responses:
+        '200':
+          description: Dashboard snapshot response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSnapshot'
+        '412':
+          description: No active compatible vault
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /app/settings:
+    get:
+      summary: Read app session settings
+      operationId: getAppSettings
+      responses:
+        '200':
+          description: Settings loaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSessionSettings'
+        '206':
+          description: Settings reset to defaults due to corruption
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSessionSettings'
+    put:
+      summary: Update app session settings
+      operationId: updateAppSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppSessionSettingsUpdateRequest'
+      responses:
+        '200':
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSessionSettings'
+components:
+  schemas:
+    InitializeVaultRequest:
+      type: object
+      required:
+        - vaultPath
+        - confirmWrite
+      properties:
+        vaultPath:
+          type: string
+        confirmWrite:
+          type: boolean
+        allowNonEmptyFolder:
+          type: boolean
+          default: false
+    OpenVaultRequest:
+      type: object
+      required:
+        - vaultPath
+      properties:
+        vaultPath:
+          type: string
+    VaultStatusResponse:
+      type: object
+      required:
+        - vaultPath
+        - status
+        - isCompatible
+        - lastValidatedAt
+      properties:
+        vaultPath:
+          type: string
+        status:
+          type: string
+          enum: [uninitialized, initializing, ready, invalid]
+        isCompatible:
+          type: boolean
+        lastValidatedAt:
+          type: string
+          format: date-time
+        validationIssues:
+          type: array
+          items:
+            type: string
+    CompatibilityWarningResponse:
+      type: object
+      required:
+        - code
+        - message
+        - canInitializeInstead
+      properties:
+        code:
+          type: string
+          enum: [INCOMPATIBLE_FOLDER]
+        message:
+          type: string
+        canInitializeInstead:
+          type: boolean
+          example: true
+    DashboardSnapshot:
+      type: object
+      required:
+        - activeVaultPath
+        - companyCount
+        - contactCount
+        - taskIntegrationStatus
+        - capturedAt
+      properties:
+        activeVaultPath:
+          type: string
+        companyCount:
+          type: integer
+          minimum: 0
+        contactCount:
+          type: integer
+          minimum: 0
+        taskIntegrationStatus:
+          type: string
+          enum: [not_configured, configured, unavailable]
+        capturedAt:
+          type: string
+          format: date-time
+    AppSessionSettings:
+      type: object
+      required:
+        - settingsVersion
+        - updatedAt
+      properties:
+        settingsVersion:
+          type: integer
+          minimum: 1
+        lastOpenedVaultPath:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+        integrityState:
+          type: string
+          enum: [valid, reset]
+    AppSessionSettingsUpdateRequest:
+      type: object
+      properties:
+        lastOpenedVaultPath:
+          type: string
+          nullable: true
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
