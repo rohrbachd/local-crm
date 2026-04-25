@@ -1,0 +1,30 @@
+﻿name: desktop-ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: |
+          cd apps/desktop
+          npm install
+      - name: Lint
+        run: |
+          cd apps/desktop
+          npm run lint
+      - name: Test
+        run: |
+          cd apps/desktop
+          npm run test
+      - name: Build
+        run: |
+          cd apps/desktop
+          npm run build

@@ -17,6 +17,31 @@ Validate that Phase 0 delivers:
 - Writable local folder for creating a test vault
 - One read-only or inaccessible folder for negative-path testing
 
+## Local Run Commands
+
+From repository root:
+
+```powershell
+cd apps/desktop
+npm install
+npm run dev
+```
+
+Validation commands (same folder):
+
+```powershell
+npm run test
+npm run lint
+npm run build
+```
+
+Optional native shell run (requires Rust + Tauri CLI):
+
+```powershell
+cd apps/desktop/src-tauri
+cargo tauri dev
+```
+
 ## Manual Validation Flow
 
 ### 1. First Launch and New Vault Creation
@@ -99,3 +124,8 @@ Expected:
 
 - All functional requirements `FR-001` to `FR-021` from `spec.md` can be mapped to a passing scenario.
 - Demo can be executed end-to-end in under five minutes.
+
+## Implementation Run Notes
+- Added US2 and US3 scaffold and tests.
+- Added performance threshold test placeholder in apps/desktop/tests/performance/phase0-performance.test.ts.
+

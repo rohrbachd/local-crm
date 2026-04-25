@@ -1,0 +1,12 @@
+﻿{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Least-privilege capabilities for local CRM desktop shell",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "fs:read",
+    "fs:write",
+    "dialog:open"
+  ]
+}
